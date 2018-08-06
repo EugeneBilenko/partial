@@ -1,0 +1,30 @@
+<table class="table table-hidden-on-mobile">
+    <thead>
+    <tr>
+        <th style="width: 25%; word-break: break-all">Name</th>
+        <th>Status</th>
+        <th>Downloaded</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+        {% for genetic_report in genetic_reports %}
+            <tr id="{{ report_type }}-{{ genetic_report.id }}" data-report="{{ genetic_report.id }}" data-page="#page-1" class="info" style="display: table-row;">
+                <td style="width: 25%; word-break: break-all">
+                    {{ genetic_report.file.file_name }}
+                    <br> 
+                </td>
+                <td class="text-primary file_status">{% if genetic_report.file_download_path %}Completed{% else %}Downloading{% endif %}</td>
+                
+                <td>{{ genetic_report.created_at }}</td>
+                <td class="text-center">
+                    <div class="action-btn-wraper">
+                        <div class="action-btn">
+                            <a class="btn-sm btn btn-success file_url pull-right {% if not genetic_report.file_download_path %} disabled {% endif %}" data-toggle="tooltip" data-placement="left" title="Click here to download this report pdf"><i class="fa fa-download"/> Download</a>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

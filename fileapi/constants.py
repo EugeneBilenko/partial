@@ -1,0 +1,1 @@
+REPORT_TYPES = ("introductory", "cardio", "inflammation")

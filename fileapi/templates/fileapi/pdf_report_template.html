@@ -1,0 +1,244 @@
+{% load set_var %}
+{% load formatting %}
+{% load staticfiles %}
+
+<html>
+<head>
+    <meta name="google-site-verification" content="MRZhWGBfhGhvXccX9lnSrc8oVAt2iszxMHnSZ-qnfgg"/>
+    <link rel="icon" type="image/png" href="https://s3-us-west-1.amazonaws.com/decodify/assets/favicon-decodify.png">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        html {
+            font-size: 10px;
+        }
+
+        :after, :before {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #fff;
+            font-family: 'Lato', Calibri, Arial, sans-serif;
+            font-size: 14px;
+            color: #656D78;
+            height: 100%;
+        }
+
+        .badge {
+            display: inline-block;
+            min-width: 10px;
+            padding: 3px 7px;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1;
+            color: #fff;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            background-color: #777;
+            border-radius: 10px;
+        }
+
+        .badge {
+            background-color: #AAB2BD;
+        }
+
+        .badge-success {
+            background-color: #8CC152;
+        }
+
+        .badge-warning {
+            background-color: #F6BB42;
+        }
+
+        .badge-danger {
+            background-color: #E9573F;
+        }
+
+        table {
+            border-spacing: 0;
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 14px;
+        }
+
+        .table-th-block > thead > tr > th {
+            border-bottom: none;
+        }
+
+        table td, table th {
+            padding: 0;
+        }
+
+        .table > tbody > tr > td, .table > tbody > tr > th, .table > tfoot > tr > td, .table > tfoot > tr > th, .table > thead > tr > td, .table > thead > tr > th {
+            padding: 9px;
+            line-height: 1.42857143;
+            vertical-align: top;
+            border-top: 1px solid #ddd;
+        }
+
+        .table-bordered > tbody > tr > td, .table-bordered > tbody > tr > th, .table-bordered > tfoot > tr > td, .table-bordered > tfoot > tr > th, .table-bordered > thead > tr > td, .table-bordered > thead > tr > th {
+            border: 1px solid #ddd;
+        }
+
+        .table-th-block > thead > tr > th, .table-th-block > tbody > tr > th, .table-th-block > tfoot > tr > th, .table-th-block > thead > tr > td, .table-th-block > tbody > tr > td, .table-th-block > tfoot > tr > td {
+            vertical-align: middle;
+            border-top-color: #E6E9ED;
+        }
+
+        table.variance-report {
+            border: none;
+        }
+
+        .section {
+            background: #fff;
+        }
+
+        .container {
+            padding: 0;
+            width: 100%;
+        }
+
+        .table-responsive {
+            min-height: .01%;
+        }
+
+        div {
+            display: block;
+        }
+
+        thead {
+            display: table-header-group;
+            vertical-align: middle;
+            border-color: inherit;
+        }
+
+        .table-th-block thead tr {
+            background: #E6E9ED;
+        }
+
+        tfoot { display: table-row-group }
+
+        tr {
+            display: table-row;
+            vertical-align: inherit;
+            border-color: inherit;
+        }
+
+        .variance-report > thead:first-child > tr:first-child > td,
+        .variance-report > .thead:first-child > tr:first-child > td {
+            color: #FFFFFF;
+            background-color: #123342;
+            font-size: 18px;
+            font-weight: 300;
+        }
+
+        b, strong {
+            font-weight: 700;
+        }
+
+        a {
+            color: #3eafdb;
+            text-decoration: none;
+        }
+
+        .table-th-block thead tr {
+            background: #E6E9ED;
+        }
+
+        tbody {
+            display: table-row-group;
+            vertical-align: middle;
+            border-color: inherit;
+        }
+
+        tr {
+            display: table-row;
+            vertical-align: inherit;
+            border-color: inherit;
+        }
+
+        .variance-report > tbody > tr > td.gene-header {
+            color: #FFFFFF;
+            background-color: #0B2F3A;
+            font-weight: bold;
+            text-align: left;
+        }
+
+        .variance-report > tbody > tr > td.gene-header {
+            color: #FFFFFF;
+            background-color: #0B2F3A;
+            font-weight: bold;
+            text-align: left;
+        }
+
+        .header {
+            text-align: center;
+        }
+
+        .table-responsive {
+            margin-top: 35px;
+        }
+
+        .table-responsive table th {
+            border-bottom: 1px solid #E6E9ED;
+        }
+
+        .table-responsive table td:last-child,
+        .table-responsive table th:last-child {
+            border-right: 3px solid #123342;
+        }
+
+        .table-responsive table td.gene-header,
+        .table-responsive table .thead td,
+        .table-responsive table thead td {
+            border-top: 3px solid #123342;
+        }
+
+        .table-responsive table td.gene-header,
+        .table-responsive table tfoot td {
+            border-bottom: 3px solid #123342;
+        }
+
+        .table-responsive table td:first-child,
+        .table-responsive table th:first-child {
+            border-left: 3px solid #123342;
+        }
+
+        table, tr, td, th, tbody, thead, .thead, tfoot {
+            page-break-inside: avoid !important;
+        }
+        .text-danger {
+            color: #E9573F;
+        }
+        .flag-icon-centered {
+            position: absolute;
+            margin-top: -7px;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+        }
+        .fa-flag {
+            width: 18px;
+            height: 16px;
+            background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAQCAYAAAD0xERiAAABL0lEQVQ4T+2TMUsCcRjGf556V55SHQZC4NR0S7ckBAeCk1MtTn6AIof0YzQGQUOjQ1NLDi1CUzg1nMt/cXOQQDCsE6/zzgslsmwJy633A/ze53mf5w0FQRDwRxNaAszm9eqUQdckcZwnKi8m9V2Z4PmohNPXUc8vUDdtRtY9zoOF37UhliJimCh7xmzRoM3w5hpPPyRhxKfbP2x6tyV6osBGVvBSreF13e/yoikiOwYSbbymYDyC8H4VrZgm9AVWr/DUzKB0LnE6P7f5D1vazeJI2zqRLQ0Gj/gtgd+fSziaRjk5Y21Xm6vGNM0cqnqHG8uzepBDWf/cXhu3UWPYsBijEdZNVrImsjpLftazCUwUSJbNaWcWmeXA/HqFniiSLGd+rwxcxq6MtOCTT87yBmFbzNGZ+CSCAAAAAElFTkSuQmCC);
+        }
+    </style>
+</head>
+<body class="home page page-id-3494 page-template-default tooltips static-nav">
+    <div class="section">
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-12">
+                    {% include "fileapi/pdf_report.html" with noactions=True %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+

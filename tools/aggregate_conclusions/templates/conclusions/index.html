@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block scripts %}
+    <script src="{% static "js/angular.min.js" %}"></script>
+    <script src="{% static "js/app.config.js" %}"></script>
+
+    <link href="{% static "agg_conclusions/index.css" %}" rel="stylesheet" type="text/css">
+    <script src="{% static "agg_conclusions/index.js" %}"></script>
+    <script src="{% static "agg_conclusions/loader.directive.js" %}"></script>
+    <script src="{% static "agg_conclusions/ui-bootstrap-tpls.js" %}"></script>
+{% endblock %}
+
+{% block breadcrumbs %}
+    <ol id="decodify_breadcrumbs" class="breadcrumb">
+        <li class="item-home">
+            <a class="bread-link bread-home" href="/" title="Home">Home</a>
+        </li>
+        <li class="item-current item-3602">
+            <strong class="bread-current bread-3602">Trait Aggregation Score</strong>
+        </li>
+    </ol>
+{% endblock %}
+
+{% block page_title %}
+    Trait Aggregation Score
+{% endblock %}
+
+{% block content %}
+    <div class="section agg-scores" ng-app="ME" ng-controller="AggregateConclusionsCtrl">
+        <div id="fixed-top" class="hide" ng-class="{show: available}">
+            <div class="container">
+                <div class="row row-1">
+                    <div class="col-sm-12 col-md-6">
+                        <div class="panel panel-info panel-toggle panel-filters" data-plugin="collapsible">
+                            <div class="panel-heading clearfix">
+                                <div class="pull-left">
+                                    <h3 class="panel-title">
+                                        Apply Filters
+                                    </h3>
+                                </div>
+                                <div class="pull-right">
+                                    <span><i class="fa fa-plus"></i></span>
+                                </div>
+                            </div>
+                            <div class="panel-body collapse">
+                                <ul>
+                                    <li>
+                                        <label for="score_from">Show traits with scores from</label>
+                                        <input type="number" id="score_from" class="form-control input-sm"
+                                               ng-model="filter.min"
+                                               ng-blur="checkScoresRange()">
+                                        <label for="score_to" class="small-l">to</label>
+                                        <input type="number" id="score_to" class="form-control input-sm"
+                                               ng-model="filter.max"
+                                               ng-blur="checkScoresRange()">
+                                    </li>
+                                    <li class="traits-more-than">
+                                        <label for="count">Show traits with more than</label>
+                                        <input type="number" class="form-control input-sm"
+                                               ng-model="filter.count" id="count"
+                                               name="count" min="0" max="300" ng-blur="countValidation()">
+                                        <label for="count" class="small-l">SNPs</label>
+                                        <button class="btn btn-info btn-sm" ng-click="loadData(1)">Apply</button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 col-md-6">
+                        <div class="panel panel-info panel-toggle panel-alter-view" data-plugin="collapsible">
+                            <div class="panel-heading clearfix">
+                                <div class="pull-left">
+                                    <h3 class="panel-title">
+                                        Alter View
+                                    </h3>
+                                </div>
+                                <div class="pull-right">
+                                    <span><i class="fa fa-plus"></i></span>
+                                </div>
+                            </div>
+                            <div class="panel-body collapse">
+                                <ul>
+                                    <li>
+                                        <label for="show_snps">Select display setting for SNPs</label>
+                                        <select name="ethnicity" id="show_snps" class="form-control input-sm"
+                                                ng-model="filter.snp">
+                                            <option value="">Hidden</option>
+                                            <option value="MY">Show My SNPs</option>
+                                            <option value="ALL">Show All SNPs</option>
+                                        </select>
+                                    </li>
+                                    <li>
+                                        <label for="ethnicity">Select ethnicity for average risk</label>
+                                        <select name="ethnicity" id="ethnicity" class="form-control input-sm"
+                                                ng-model="filter.ethnicity"
+                                                ng-change="loadData()">
+                                            <option value="ALL">All individuals</option>
+                                            <option value="AFR">African</option>
+                                            <option value="AMR">American</option>
+                                            <option value="EAS">East Asian</option>
+                                            <option value="EUR">European</option>
+                                            <option value="SAS">South Asian</option>
+                                        </select>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <nav aria-label="Page navigation" class="page-nav">
+                    <a id="legend" role="button" tabindex="-1" class="btn btn-info">Legend</a>
+                    <div id="legend-content">
+                        <ul class="panel-legend">
+                            <li>
+                                <i class="score">#</i>
+                                = your risk score
+                            </li>
+                            <li>
+                                <i class="avg">#</i>
+                                = average risk score
+                            </li>
+                            <li>
+                                <i class="badge badge-success">&nbsp;</i>
+                                = homozygous for non-risk allele
+                            </li>
+                            <li>
+                                <i class="badge badge-warning">&nbsp;</i>
+                                = heterozygous
+                            </li>
+                            <li>
+                                <i class="badge badge-danger">&nbsp;</i>
+                                = homozygous for risk allele
+                            </li>
+                            <li>
+                                <i class="badge badge-purple">&nbsp;</i>
+                                = no risk allele reported, BUT rare genotype
+                            </li>
+                            <li>
+                                <i class="badge badge-info">&nbsp;</i>
+                                = no risk allele reported, common genotype
+                            </li>
+                            <li>
+                                <i class="badge badge-default">&nbsp;</i>
+                                = SNP not included in your file
+                            </li>
+                        </ul>
+                    </div>
+                    <ul class="pagination">
+                        <li ng-class="{disabled: filter.page == 1}">
+                            <a role="button" aria-label="Previous" ng-click="toPage(1)">
+                                <span aria-hidden="true">&laquo;</span> First
+                            </a>
+                        </li>
+                        <li ng-class="{disabled: filter.page == 1}">
+                            <a role="button" aria-label="Previous" ng-click="toPage(filter.page-1)">
+                                <span aria-hidden="true">&lsaquo;</span> Prev
+                            </a>
+                        </li>
+                        <li class="select-page">
+                            <label for="current-page">Page</label>
+                            <input id="current-page" ng-model="filter.page" ng-change="changePage($event)">
+                            <label for="">
+                                of <span ng-bind="filter.total"></span>
+                            </label>
+                        </li>
+                        <li ng-class="{disabled: filter.total==filter.page}">
+                            <a role="button" aria-label="Next" ng-click="toPage(filter.page+1)">
+                                Next <span aria-hidden="true">&rsaquo;</span>
+                            </a>
+                        </li>
+                        <li ng-class="{disabled: filter.total==filter.page}">
+                            <a role="button" aria-label="Next" ng-click="toPage(filter.total)">
+                                Last <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    </ul>
+                    <div class="select-items-per-page">
+                        Traits per page &nbsp;&nbsp;
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown"
+                                    aria-haspopup="true">
+                                <span ng-bind="filter.limit"></span>
+                                <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li ng-repeat="p in items_per_page" ng-class="{active: filter.limit==p}">
+                                    <a role="button" ng-click="selectPerPage(p)">
+                                        <span ng-bind="p"></span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        </div>
+        <div class="container loading">
+            <div class="items hide" ng-class="{show: available}">
+                <div ng-repeat="item in data">
+                    <div class="disease-trait">
+                        <div class="brief">
+                            <div class="title" ng-bind="item.name">
+                            </div>
+                            <div class="scale clearfix">
+                                <div class="bullets" ng-repeat="i in scale" ng-class="getTraitStyle(item, i)">
+                                    <span ng-bind="i"></span>
+                                </div>
+                            </div>
+                            <div ng-class="{hidden: !filter.snp}" class="snp-list">
+                                <h4 ng-if="filter.snp=='MY'">Your SNPs</h4>
+                                <h4 ng-if="filter.snp=='ALL'">All SNPs</h4>
+                                <ul>
+                                    <li ng-repeat="snp in item.matches|orderBy:'order'">
+                                        <a class="badge"
+                                           uib-tooltip="{[snp.rsid]}"
+                                           ng-class="getSNPClass(snp.order)"
+                                           ng-href="/snp/{[snp.rsid]}"></a>
+                                    </li>
+                                    <li ng-if="filter.snp=='ALL'" ng-repeat="rsid in item.other track by $index">
+                                        <a class="badge badge-default"
+                                           uib-tooltip="{[rsid]}"
+                                           ng-href="/snp/{[rsid]}"></a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="details">
+                            <div class="dt-ontology">
+                                <div ng-repeat="dt in item.details.dt_ontology">
+                                    <h4 ng-bind="dt.name"></h4>
+                                    <p ng-bind="dt.definition || 'No information'"></p>
+                                </div>
+                            </div>
+                            <div class="snps-info">
+                                <table>
+                                    <thead>
+                                    <tr>
+                                        <th>
+                                            ID
+                                            <span class="fa fa-info-circle tooltip-icon"
+                                                  tooltip-placement="top-left"
+                                                  uib-tooltip="This is the unique number ID of a SNP.">
+                                            </span>
+                                        </th>
+                                        <th>
+                                            Genotype
+                                            <span class="fa fa-info-circle tooltip-icon"
+                                                  uib-tooltip="The Genotype is the alleles you have for the SNP.">
+                                            </span>
+                                        </th>
+                                        <th>
+                                            Frequency
+                                            <span class="fa fa-info-circle tooltip-icon"
+                                                  uib-tooltip="The percentage of global population that shares your genotype.
+                                                For ethnic frequencies visit the SNP info page.">
+                                            </span>
+                                        </th>
+                                        <th>
+                                            Trait info
+                                            <span class="fa fa-info-circle tooltip-icon"
+                                                  uib-tooltip="The trait info contains information about the traits associated with this SNP.
+                                                For more detailed information visit the SNP info page.">
+                                            </span>
+                                        </th>
+                                        <th>
+                                            Auto Flag
+                                            <span class="fa fa-info-circle tooltip-icon"
+                                                  uib-tooltip="SNPs of interest identified by us.">
+                                            </span>
+                                        </th>
+                                        <th>
+                                            Importance
+                                            <span class="fa fa-info-circle tooltip-icon"
+                                                  uib-tooltip="Importance is a value we assign to each SNP based on it's veracity and impact.
+                                                If there are many credible studies and they show substantial impact on health, this number will rise.">
+
+                                            </span>
+                                        </th>
+                                        <th>
+                                            Bookmarks
+                                            <span class="fa fa-info-circle tooltip-icon"
+                                                  tooltip-placement="top-right"
+                                                  uib-tooltip="Bookmarks let you save SNPs of interest for later viewing.">
+                                            </span>
+                                        </th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr ng-repeat="snp in item.matches|orderBy:'order'">
+                                        <td>
+                                            <a ng-href="/snp/{[snp.rsid]}" ng-bind="snp.rsid"></a>
+                                        </td>
+                                        <td>
+                                            <span title="{[snp.rsid]}" class="badge"
+                                                  ng-class="getSNPClass(snp.order)">
+                                                <span ng-bind="item.details.matches[snp.rsid].genotype"></span>
+                                            </span>
+                                        </td>
+                                        <td ng-bind="item.details.matches[snp.rsid].frequency + '%'">
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-rounded-sm modal-button btn-default"
+                                                    uib-tooltip="{[item.details.matches[snp.rsid].risk_all_desc]}"
+                                                    ng-click="showSnpInfo(item, snp, '{{ request.user.username }}')">
+                                                <span class="fa fa-info"></span>
+                                            </button>
+                                        </td>
+                                        <td>
+                                            <span ng-if="item.details.matches[snp.rsid].red_flag.show"
+                                                  class="fa fa-flag text-danger flag-icon-centered"
+                                                  data-toggle="tooltip"
+                                                  data-placement="top"
+                                                  uib-tooltip="{[item.details.matches[snp.rsid].red_flag.title]}">
+                                            </span>
+                                        </td>
+                                        <td ng-bind="item.details.matches[snp.rsid].importance"></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-rounded-sm modal-button btn-default"
+                                                    ng-class="{'btn-success': item.details.matches[snp.rsid].is_bookmarked}"
+                                                    ng-click="bookmarkSNP(snp.id, item.details.matches[snp.rsid])">
+                                                <i class="fa fa-bookmark"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <i class="fa"
+                           ng-class="{'fa-minus':item.show, 'fa-plus':!item.show}"
+                           ng-click="showDetails(item, $event)"></i>
+                    </div>
+                </div>
+                <div ng-if="!data.length" class="empty">
+                    Genomic information is not available for active genome file.
+                </div>
+            </div>
+            <div ng-show="loading" class="progress-loader" text="loading_text"
+                 description="loading_desc"></div>
+        </div>
+        <script type="text/ng-template" id="snpInfoModal.html">
+            <div class="modal-header bg-primary no-border">
+                <button type="button" class="close" ng-click="$dismiss()">
+                    &times;
+                </button>
+                <span class="genotype-text" style="float:right; margin: 5px 13px 0 0;">
+                    My Genotype: <span ng-bind="item.sort_genotype"></span>
+                </span>
+                <h4 class="modal-title" ng-bind="snp.rsid"></h4>
+            </div>
+            <div class="modal-body" ng-bind-html="html"></div>
+            <div class="modal-footer">
+                <button class="btn btn-default" type="button" ng-click="$dismiss()">Close</button>
+            </div>
+        </script>
+    </div>
+{% endblock content %}

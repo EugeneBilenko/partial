@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load static %}
+{% block scripts %}
+    <script src="{% static "js/angular.min.js" %}"></script>
+    <script src="{% static "js/app.config.js" %}"></script>
+
+    <link href="{% static "symptoms_analyzer/index.css" %}" rel="stylesheet" type="text/css">
+    <script src="{% static "symptoms_analyzer/index.js" %}"></script>
+    <script src="{% static "agg_conclusions/loader.directive.js" %}"></script>
+    <script src="{% static "agg_conclusions/ui-bootstrap-tpls.js" %}"></script>
+{% endblock %}
+
+{% block breadcrumbs %}
+    <ol id="decodify_breadcrumbs" class="breadcrumb">
+        <li class="item-home">
+            <a class="bread-link bread-home" href="/" title="Home">Home</a>
+        </li>
+        <li class="item-current item-3602">
+            <strong class="bread-current bread-3602">Symptoms & Conditions Analyzer</strong>
+        </li>
+    </ol>
+{% endblock %}
+
+{% block page_title %}
+    Symptoms and Conditions Analyzer
+{% endblock %}
+
+{% block content %}
+    <div class="section symptoms-analyzer" ng-app="ME" ng-controller="SymptomsAnalyzerCtrl">
+        <div class="container loading">
+            <form class="input-group input-group-lg search-group" ng-submit="submitSearch()">
+                <input type="text" class="form-control" placeholder="Search for..." ng-model="search_term">
+                <div class="input-group-btn">
+                    <button class="btn btn-default" type="submit">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </div>
+            </form>
+            <div class="result">
+                <div ng-if="!loading && data.length" class="table-responsive">
+                    <table class="table table-striped table-condensed">
+                        <thead>
+                        <tr>
+                            <th ng-repeat="(k, h) in headers" ng-bind="h" ng-class="{'text-center': isListKey(k)}"></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr ng-repeat="item in data">
+                            <td ng-repeat="(k, h) in headers">
+                                <div ng-if="!isListKey(k)">
+                                    <span ng-bind="item[k]"></span>
+                                </div>
+                                <div ng-if="isListKey(k)">
+                                    <div ng-repeat="i in item[k] track by $index" class="text-center">
+                                        <span ng-if="k == 'cID'" ng-bind="getCategoryName(i)"></span>
+                                        <span ng-if="k == 'mgType'" ng-bind="i"></span>
+                                        <span ng-if="k == 'mType'">
+                                            <span ng-repeat="j in i" ng-bind="j"></span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div ng-if="empty" class="empty">
+                    No Suitable Matches Found...
+                </div>
+            </div>
+            <div ng-show="loading" class="progress-loader"></div>
+        </div>
+    </div>
+{% endblock content %}

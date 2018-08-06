@@ -1,0 +1,60 @@
+{% load formatting %}
+{% load genome_filters %}
+{% load genome_tags %}
+{% load pdf_tags %}
+{% load genome_simple_description %}
+
+<div id="variance_report_all_all_569" class="clearfix">
+    <div class="table-responsive">
+        <table id="table_all" class="table table-th-block table-bordered variance-report">
+            <thead>
+                <tr>
+                    <td colspan="5" align="center" class="header"><b>Variance Report</b></td>
+                </tr>
+                <tr style="font-size: 90%;" id="report-header">
+                    <th>ID&nbsp;<span class="fa fa-info-circle tooltip-icon" data-toggle="tooltip" data-placement="bottom"></span></th>
+                    <th>Genotype&nbsp;<span class="fa fa-info-circle tooltip-icon" data-toggle="tooltip" data-placement="bottom"></span></th>
+                    <th>Frequency&nbsp;<span class="fa fa-info-circle tooltip-icon" data-toggle="tooltip" data-placement="bottom"></span></th>
+                    <th>Auto Flag&nbsp;<span class="fa fa-info-circle tooltip-icon" data-toggle="tooltip" data-placement="bottom"></span></th>
+                    <th>Importance&nbsp;<span class="fa fa-info-circle tooltip-icon" data-toggle="tooltip" data-placement="bottom"></span></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% regroup query_set by genes_list as genes_groups %}
+                {% for group in genes_groups %}
+                    <tr data-row="gene">
+                        <td colspan="5" class="gene-header">
+                            {% for gene in group.grouper %}
+                                <span class="modal-button" data-toggle="tooltipsy"
+                                      title="{% simple_description_by_gene gene %}">
+                                    <a href="{% abs_link "gene" gene %}" class="gene-name">{{ gene|upper }}</a>
+                                </span>
+                                {% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% for snp in group.list %}
+                        <tr>
+                            <td><a href="">{{ snp.rsid }}</a></td>
+                            <td>{% genotype_badge snp.user_genotype snp.minor_allele snp.user_genotype %}</td>
+                            <td>{{ snp.get_genotype_frequency|float_to_percent }}</td>
+                            <td style="position:relative;">{% allele_flag snp %}</td>
+                            <td >{{ snp.importance }}</td>
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr data-row="footer">
+                    <td colspan="5">SNPs in category:&nbsp;<b>{{ query_set_count }}</b></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+
+
+
+

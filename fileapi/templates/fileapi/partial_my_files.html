@@ -1,0 +1,282 @@
+{% load staticfiles %}
+{% load formatting %}
+{% load demouser %}
+{% load genome_tags %}
+
+<style>
+        @media (min-width: 768px) {
+            .table-visible-on-mobile {
+                display: none;
+            }
+            .table-hidden-on-mobile {
+                display: table;
+            }
+        }
+        @media (max-width: 767px) {
+            .table-visible-on-mobile {
+                display: table;
+            }
+            .table-hidden-on-mobile {
+                display: none;
+            }
+            .file-name{
+                word-break: break-all;
+            }
+            .action-btn-wraper button{
+                display: block;
+                min-width: 24px;
+                min-height: 24px;
+                margin-bottom: 5px;
+            }
+        }
+    </style>
+<div class="row with-pagination">
+    <div class="col-sm-12">
+        <div class="panel panel-info panel-toggle" data-plugin="collapsible">
+            <div class="panel-heading bg-snps" data-hash="section-my-files">
+                <h3 class="panel-title">
+                    <div class="pull-left">
+                        {% with subscription=user.user_profile.get_subscription %}
+                        My Files {% if subscription and subscription.plan.max_file_uploads != 0 %}<span title="Your file uploads quota" data-toggle="tooltip">({{ user.user_profile.file_uploads_count }}/{{ user.user_profile.get_subscription.uploads_available }})</span>{% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="pull-right">
+                        <i class="fa fa-plus" style="padding: 0 7px"></i>
+                        {% if not user|is_demouser and user.user_profile.has_subscription %}
+                            <a href="{% url 'uploader' %}" class="pull-right color-inherit" data-link="prevented"
+                               data-toggle="tooltip" title="Upload new file">
+                                <i class="fa fa-upload" aria-hidden="true"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                    <div class="clearfix"></div>
+                </h3>
+
+                <div class="clearfix"></div>
+            </div>
+            <div class="panel-body collapse">
+                <div class="table-responsive">
+                    <table class="table table-hidden-on-mobile">
+                        <thead>
+                        <tr>
+                            <th style="width: 25%; word-break: break-all">Name</th>
+                            <th>Status</th>
+                            <th>Uploaded</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for pnum in paginator.page_range %}
+                            {% for file in paginator|get_page:pnum %}
+                                <tr data-page="#page-{{ pnum }}"
+                                    {% if file.pk == user.user_profile.active_file.pk %}class="info"{% endif %}>
+                                    <td style="width: 25%; word-break: break-all">
+                                        {{ file.file_name }}
+                                        <br>
+                                        {% rescan_warning file %}
+                                    </td>
+                                    {% if file.status == file.FILE_STATUS_PROCESSING %}
+                                        <td id="progress-{{ file.pk }}">
+                                            <div class="progress" style="margin: 0;" data-filepk="{{ file.pk }}">
+                                                <div class="progress-bar progress-bar-success progress-bar-striped active"
+                                                     aria-valuenow="{{ file.progress }}"
+                                                     aria-valuemin="0"
+                                                     aria-valuemax="100"
+                                                     style="width: {{ file.progress }}%;text-align: center;padding-left: 0;"
+                                                ><span>{{ file.progress|format:"{:.0f}" }}%</span></div>
+                                            </div>
+                                        </td>
+                                    {% else %}
+                                        <td id="progress-{{ file.pk }}"
+                                                {% if file.status == file.FILE_STATUS_UPLOADED or file.status == file.FILE_STATUS_QUEUED %}
+                                            class="text-muted"
+                                                {% elif file.status == file.FILE_STATUS_ERROR %}
+                                            class="text-danger"
+                                                {% else %}
+                                            class="text-primary"
+                                                {% endif %}
+                                        >{{ file.get_status_display }}</td>
+                                    {% endif %}
+                                    <td>{{ file.created_at }}</td>
+                                    <td class="text-center">
+                                        {% if file.status != file.FILE_STATUS_ERROR %}
+                                            {% if file.pk == user.user_profile.active_file.pk %}
+                                                <span class="text-primary pull-right" title="Selected file"
+                                                      data-toggle="tooltip"><span class="fa fa-check"></span></span>
+                                            {% else %}
+                                                <form action="{% url "fileapi:change_active_file" %}" method="POST"
+                                                      class="pull-right">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="file_id" value="{{ file.pk }}">
+                                                    <button class="btn btn-primary btn-xs select-btn"
+                                                            title="Select this file" data-toggle="tooltip">
+                                                        <span class="fa fa-check"></span>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if file.status == file.FILE_STATUS_COMPLETED or file.status == file.FILE_STATUS_UPLOADED or file.status == file.FILE_STATUS_ERROR %}
+                                            {% if file.rescan_available and not user|is_demouser %}
+                                                {% if not user.user_profile.access_token and file.provider == file.PROVIDER_23ANDME_API %}
+                                                    <a class="btn btn-info btn-xs rescan-btn pull-right"
+                                                       href="https://api.23andme.com/authorize/?response_type=code&client_id={{ X23ANDME_CLIENT_ID }}&scope=basic%20genomes"
+                                                       title="Rescan this file" data-toggle="tooltip">
+                                                        <span class="fa fa-refresh"></span>
+                                                    </a>
+                                                {% elif not file.is_demofile %}
+                                                    <form action="{% url "fileapi:rescan_file" %}" method="POST"
+                                                          class="pull-right" style="margin-right: 5px;">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="file_id" value="{{ file.pk }}">
+                                                        <button class="btn btn-info btn-xs rescan-btn"
+                                                                title="Rescan this file" data-toggle="tooltip">
+                                                            <span class="fa fa-refresh"></span>
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if file.pk != user.user_profile.active_file.pk and file.status != file.FILE_STATUS_PROCESSING %}
+                                            <div class="pull-right" style="margin-right: 5px;">
+                                                <form action="{% url "fileapi:remove_file" %}" method="POST">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="file_id" value="{{ file.pk }}">
+                                                </form>
+                                                <button class="btn btn-danger btn-xs remove-file-btn"
+                                                        title="Remove this file" data-toggle="tooltip">
+                                                    <span class="fa fa-trash"></span>
+                                                </button>
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <table class="table table-visible-on-mobile">
+                    <tbody>
+                    {% for pnum in paginator.page_range %}
+                        {% for file in paginator|get_page:pnum %}
+                            <tr data-page="#page-{{ pnum }}"
+                                {% if file.pk == user.user_profile.active_file.pk %}class="info"{% endif %}>
+                                <td>
+                                    <div class="row">
+                                        <div class="col-md-12 file-name">
+                                            {{ file.file_name }}
+                                            <br>
+                                            {% rescan_warning file %}
+                                        </div>
+                                        {% if file.status == file.FILE_STATUS_PROCESSING %}
+                                            <div class="col-md-11 col-xs-offset-1" id="progress-{{ file.pk }}">
+                                                <div class="progress" style="margin: 0;" data-filepk="{{ file.pk }}">
+                                                    <div class="progress-bar progress-bar-success progress-bar-striped active"
+                                                         aria-valuenow="{{ file.progress }}"
+                                                         aria-valuemin="0"
+                                                         aria-valuemax="100"
+                                                         style="width: {{ file.progress }}%;text-align: center;padding-left: 0;"
+                                                    ><span>{{ file.progress|format:"{:.0f}" }}%</span></div>
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <div id="progress-{{ file.pk }}"
+                                                    {% if file.status == file.FILE_STATUS_UPLOADED or file.status == file.FILE_STATUS_QUEUED %}
+                                                 class="text-muted col-md-11 col-xs-offset-1"
+                                                    {% elif file.status == file.FILE_STATUS_ERROR %}
+                                                 class="text-danger col-md-11 col-xs-offset-1"
+                                                    {% else %}
+                                                 class="text-primary col-md-11 col-xs-offset-1"
+                                                    {% endif %}
+                                            >{{ file.get_status_display }}</div>
+                                        {% endif %}
+                                        <div class="col-md-11 col-xs-offset-1">{{ file.created_at }}</div>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <div class="action-btn-wraper">
+                                        <div class="action-btn">
+                                            {% if file.status != file.FILE_STATUS_ERROR %}
+                                                {% if file.pk == user.user_profile.active_file.pk %}
+                                                    <span class="text-primary pull-right" title="Selected file"
+                                                          data-toggle="tooltip"><span class="fa fa-check"></span></span>
+                                                {% else %}
+
+                                                    <form action="{% url "fileapi:change_active_file" %}" method="POST">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="file_id" value="{{ file.pk }}">
+                                                        <button class="btn btn-primary btn-xs select-btn"
+                                                                title="Select this file" data-toggle="tooltip">
+                                                            <span class="fa fa-check"></span>
+                                                        </button>
+                                                    </form>
+
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                        <div class="action-btn">
+                                            {% if file.status == file.FILE_STATUS_COMPLETED or file.status == file.FILE_STATUS_UPLOADED or file.status == file.FILE_STATUS_ERROR %}
+                                                {% if file.rescan_available and not user|is_demouser %}
+                                                    {% if not user.user_profile.access_token and file.provider == file.PROVIDER_23ANDME_API %}
+                                                        <a class="btn btn-info btn-xs rescan-btn pull-right"
+                                                           href="https://api.23andme.com/authorize/?response_type=code&client_id={{ X23ANDME_CLIENT_ID }}&scope=basic%20genomes"
+                                                           title="Rescan this file" data-toggle="tooltip">
+                                                            <span class="fa fa-refresh"></span>
+                                                        </a>
+                                                    {% elif not file.is_demofile %}
+
+                                                        <form action="{% url "fileapi:rescan_file" %}" method="POST">
+                                                            {% csrf_token %}
+                                                            <input type="hidden" name="file_id" value="{{ file.pk }}">
+                                                            <button class="btn btn-info btn-xs rescan-btn"
+                                                                    title="Rescan this file" data-toggle="tooltip">
+                                                                <span class="fa fa-refresh"></span>
+                                                            </button>
+                                                        </form>
+
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                        <div class="action-btn">
+                                            {% if file.pk != user.user_profile.active_file.pk and file.status != file.FILE_STATUS_PROCESSING %}
+                                                <form action="{% url "fileapi:remove_file" %}" method="POST">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="file_id" value="{{ file.pk }}">
+                                                </form>
+                                                <button class="btn btn-danger btn-xs remove-file-btn"
+                                                        title="Remove this file" data-toggle="tooltip">
+                                                    <span class="fa fa-trash"></span>
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% if paginator.count > paginator.per_page %}
+                <ul class="pagination">
+                    {% for pnum in paginator.page_range %}
+                        <li><a href="#page-{{ pnum }}">{{ pnum }}</a></li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+
+        </div><!-- /.panel -->
+    </div><!-- /.col-sm-12 -->
+</div><!-- /.row -->
+
+<script type="text/html" id="tpl-file-progressbar">
+<div class="progress" style="margin: 0;" data-filepk="{file_id}" id="progress-{file_id}}">
+    <div class="progress-bar progress-bar-success progress-bar-striped active"
+        aria-valuenow="{value}"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        style="width: {value}%;text-align: center;padding-left: 0;"
+    ><span>{value}%</span></div>
+</div>
+</script>
